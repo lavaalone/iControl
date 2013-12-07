@@ -12,6 +12,7 @@
 #import "CSScreenRecorder.h"
 
 
+
 @interface CSRecordViewController : UIViewController <CSScreenRecorderDelegate>
 {
     UISegmentedControl      *_record, *_stop;

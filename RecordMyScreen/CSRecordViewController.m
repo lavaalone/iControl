@@ -11,6 +11,8 @@
 #include <sys/time.h>
 #import <CoreVideo/CVPixelBuffer.h>
 #import <dlfcn.h>
+#include "Defines.h"
+
 
 #import "GSEvent.h"
 
@@ -131,6 +133,11 @@
 
 - (void)record:(id)sender
 {
+//    if (OS_OpenConnection(IP_CONNECTION, IP_PORT) == 1)
+//    {
+//        NSLog(@"Open connection");
+//    }
+//    return;
     self.updateTimer = [NSTimer scheduledTimerWithTimeInterval:2.0
                                                         target:self
                                                       selector:@selector(touchScreen)
@@ -143,6 +150,7 @@
         [[UIApplication sharedApplication] endBackgroundTask:self.backgroundTask];
         self.backgroundTask = UIBackgroundTaskInvalid;
     }];
+//    CConnectionHandler *connectionHandler = CConnectionHandler->GetInstance();
     
     //[_screenRecorder takeScreenshot];
     
@@ -185,26 +193,20 @@
 - (void)touchScreen
 {
     NSLog(@"Touch screen");
+//    CConnectionHandler* connectionHandler = CConnectionHandler::GetInstance();
+
     
     CGPoint point = CGPointMake(280, 400);
     
-    //[self handleMouseEventAtPoint:point];
-    //[self handleMouseEventAtPoint2:point];
-    
-//    handleMouseEventAtPoint2(point, true, "org.coolstar.iControl");
-//    usleep(1000);
-//    handleMouseEventAtPoint2(point, false, "org.coolstar.iControl");
-    
-    [self handleMouseEventAtPoint:point];
 //    [self handleMouseEventAtPoint:point];
-//    return;
+    [self simulatePressHomeEvent];
     
     double delayInSeconds = 0.25;
     dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
     dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-        [self handleMouseEventAtPoint:point];
-        //[self handleMouseEventAtPoint2:point];
-        //handleMouseEventAtPoint2(point, false, "org.coolstar.iControl");
+//        [self handleMouseEventAtPoint:point];
+        [self simulatePressHomeEvent];
+
     });
 }
 
@@ -229,13 +231,10 @@ static mach_port_t getFrontMostAppPort()
 
     if([frontmostApp length] == 0 || locked)
     {
-        NSLog(@"###DEBUG 1");
-        //return GSGetPurpleSystemEventPort();
         return GetHomeScreenPort();
     }
     else
     {
-        NSLog(@"###DEBUG 2");
         return GSCopyPurpleNamedPort(appId);
     }
 }
@@ -248,6 +247,17 @@ static mach_port_t GetAppPort(const char* app_bundle)
 static mach_port_t GetHomeScreenPort()
 {
     return GSCopyPurpleNamedPort("com.apple.springboard");
+}
+
+-(void) simulatePressHomeEvent
+{
+    NSLog(@"Simulate press home event");
+    GSEventType type = touch_down ? kGSEventMenuButtonDown : kGSEventMenuButtonUp;
+    GSSendSimpleEvent(type, GetHomeScreenPort());
+    NSLog(@"Sent home event, touch_down = %d", touch_down);
+
+    
+    touch_down = !touch_down;
 }
 
 -(void) handleMouseEventAtPoint:(CGPoint) point
