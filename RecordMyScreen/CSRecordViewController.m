@@ -13,15 +13,23 @@
 #import <dlfcn.h>
 #include "Defines.h"
 
-
 #import "GSEvent.h"
+#import "CSMain.h"
 
 #define SBSERVPATH  "/System/Library/PrivateFrameworks/SpringBoardServices.framework/SpringBoardServices"
+
+#define ESTABLISH_CONNECTION        0
+#define GET_CONSTANTS               1
+#define BACK_TO_HOME_SCREEN         2
+#define KILL_ALL_BACKGROUND_APPS    3
+
+extern CSMain* _main;
 
 @interface CSRecordViewController ()
 {
     CSScreenRecorder *_screenRecorder;
-    bool touch_down;
+    bool _touchdown;
+    int _currentStep;
 }
 
 @property (nonatomic, strong) NSTimer *updateTimer;
@@ -37,7 +45,8 @@
         _screenRecorder = [[CSScreenRecorder alloc] init];
         _screenRecorder.delegate = self;
         
-        touch_down = true;
+        _touchdown = true;
+        _currentStep = 0;
         
         self.tabBarItem = [[[UITabBarItem alloc] initWithTitle:NSLocalizedString(@"iControl", @"") image:[UIImage imageNamed:@"video"] tag:0] autorelease];
     }
@@ -137,6 +146,12 @@
 //    {
 //        NSLog(@"Open connection");
 //    }
+//    _stop.enabled = YES;
+//    return;
+//    if (_main != NULL)
+//    {
+//        [_main Update];
+//    }
 //    return;
     self.updateTimer = [NSTimer scheduledTimerWithTimeInterval:2.0
                                                         target:self
@@ -196,7 +211,7 @@
 //    CConnectionHandler* connectionHandler = CConnectionHandler::GetInstance();
 
     
-    CGPoint point = CGPointMake(280, 400);
+//    CGPoint point = CGPointMake(280, 400);
     
 //    [self handleMouseEventAtPoint:point];
     [self simulatePressHomeEvent];
@@ -208,6 +223,40 @@
         [self simulatePressHomeEvent];
 
     });
+}
+
+-(mach_port_t)GetFrontMostAppPort
+{
+    bool locked;
+    bool passcode;
+    mach_port_t *port;
+    void *lib = dlopen(SBSERVPATH, RTLD_LAZY);
+    int (*SBSSpringBoardServerPort)() = dlsym(lib, "SBSSpringBoardServerPort");
+    void* (*SBGetScreenLockStatus)(mach_port_t* port, bool *lockStatus, bool *passcodeEnabled) = dlsym(lib, "SBGetScreenLockStatus");
+    port = (mach_port_t *)SBSSpringBoardServerPort();
+    dlclose(lib);
+    SBGetScreenLockStatus(port, &locked, &passcode);
+    void *(*SBFrontmostApplicationDisplayIdentifier)(mach_port_t *port, char *result) = dlsym(lib, "SBFrontmostApplicationDisplayIdentifier");
+    char appId[256];
+    memset(appId, 0, sizeof(appId));
+    SBFrontmostApplicationDisplayIdentifier(port, appId);
+    NSString * frontmostApp=[NSString stringWithFormat:@"%s",appId];
+    
+    NSLog(@"app id %s", appId);
+    
+    if([frontmostApp length] == 0 || locked)
+    {
+        return GetHomeScreenPort();
+    }
+    else
+    {
+        return GSCopyPurpleNamedPort(appId);
+    }
+}
+
+-(mach_port_t) GetHomePort
+{
+    return GSCopyPurpleNamedPort("com.apple.springboard");
 }
 
 static mach_port_t getFrontMostAppPort()
@@ -252,12 +301,13 @@ static mach_port_t GetHomeScreenPort()
 -(void) simulatePressHomeEvent
 {
     NSLog(@"Simulate press home event");
-    GSEventType type = touch_down ? kGSEventMenuButtonDown : kGSEventMenuButtonUp;
-    GSSendSimpleEvent(type, GetHomeScreenPort());
-    NSLog(@"Sent home event, touch_down = %d", touch_down);
+    GSEventType type = _touchdown ? kGSEventMenuButtonDown : kGSEventMenuButtonUp;
+//    GSSendSimpleEvent(type, GetHomeScreenPort());
+    GSSendSimpleEvent(type, [self GetHomePort]);
+    NSLog(@"Sent home event, touch_down = %d", _touchdown);
 
     
-    touch_down = !touch_down;
+    _touchdown = !_touchdown;
 }
 
 -(void) handleMouseEventAtPoint:(CGPoint) point
@@ -281,7 +331,7 @@ static mach_port_t GetHomeScreenPort()
     touchEvent->record.timestamp = GSCurrentEventTimestamp();
     touchEvent->record.infoSize = sizeof(GSHandInfo) + sizeof(GSPathInfo);
     
-    touchEvent->handInfo.type = getHandInfoType(touch_down);
+    touchEvent->handInfo.type = getHandInfoType(_touchdown);
     touchEvent->handInfo.pathInfosCount = 1;
     
     bzero(&touchEvent->handInfo.pathInfos[0], sizeof(GSPathInfo));
@@ -293,9 +343,9 @@ static mach_port_t GetHomeScreenPort()
     GSSendEvent((GSEventRecord*)touchEvent, getFrontMostAppPort());
     //GSSendEvent((GSEventRecord*)touchEvent, GetAppPort("org.coolstar.iControl"));
     
-    NSLog(@"Sent touch event, touch_down = %d", touch_down);
+    NSLog(@"Sent touch event, touch_down = %d", _touchdown);
     
-    touch_down = !touch_down;
+    _touchdown = !_touchdown;
 }
 //
 //void handleMouseEventAtPoint2(CGPoint point, bool touch_down, const char* bundle)
@@ -372,6 +422,7 @@ static GSHandInfoType getHandInfoType(bool touch_down)
 
 - (void)stop:(id)sender
 {
+    OS_CloseConnection();
     return;
     //[_screenRecorder stopRecordingScreen];
 }
@@ -429,6 +480,48 @@ static GSHandInfoType getHandInfoType(bool touch_down)
 {
     
 }
+
+- (void) Update
+{
+    NSLog(@"Update with current step =%d", _currentStep);
+    
+    switch (_currentStep)
+    {
+        case ESTABLISH_CONNECTION:
+        {
+            // Open connectiont to control server
+            if (OS_OpenConnection(IP_CONNECTION, IP_PORT) == 1)
+            {
+                NSLog(@"Update.. connect established.");
+                _currentStep++;
+            }
+        }
+            break;
+        case GET_CONSTANTS:
+        {
+            // get apps constant (position of these apps on screen: setting, uidfaker, main app, etc..)
+        }
+            break;
+        case BACK_TO_HOME_SCREEN:
+        {
+            // back to home screen
+            // only increase step if make sure current screen is home screen
+        }
+            break;
+        case KILL_ALL_BACKGROUND_APPS:
+        {
+            // click on the right side of the status bar
+            // only increase step if running list is empty
+        }
+            break;
+            
+        default:
+            break;
+    }
+//    _currentStep++;
+    
+}
+
 #pragma mark - NSFileManager Methods
 
 - (NSString *)inDocumentsDirectory:(NSString *)path {

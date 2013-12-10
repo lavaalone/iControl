@@ -21,4 +21,6 @@
     IBOutlet UIProgressView *_progressView;
 
 }
+-(mach_port_t) GetFrontMostAppPort;
+-(mach_port_t) GetHomePort;
 @end
