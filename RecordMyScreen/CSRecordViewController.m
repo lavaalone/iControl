@@ -18,10 +18,6 @@
 
 #define SBSERVPATH  "/System/Library/PrivateFrameworks/SpringBoardServices.framework/SpringBoardServices"
 
-#define ESTABLISH_CONNECTION        0
-#define GET_CONSTANTS               1
-#define BACK_TO_HOME_SCREEN         2
-#define KILL_ALL_BACKGROUND_APPS    3
 
 extern CSMain* _main;
 
@@ -48,7 +44,7 @@ extern CSMain* _main;
         _touchdown = true;
         _currentStep = 0;
         
-        self.tabBarItem = [[[UITabBarItem alloc] initWithTitle:NSLocalizedString(@"iControl", @"") image:[UIImage imageNamed:@"video"] tag:0] autorelease];
+//        self.tabBarItem = [[[UITabBarItem alloc] initWithTitle:NSLocalizedString(@"iControl", @"") image:[UIImage imageNamed:@"video"] tag:0] autorelease];
     }
     return self;
 }
@@ -64,67 +60,108 @@ extern CSMain* _main;
 - (void)loadView
 {
     self.view = [[[UIView alloc] initWithFrame:CGRectMake(0, 0, [UIScreen mainScreen].applicationFrame.size.width, [UIScreen mainScreen].applicationFrame.size.height)] autorelease];
+    
     UINavigationBar *navigationBar = [[UINavigationBar alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 43)];
+    
     navigationBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     [navigationBar pushNavigationItem:[[[UINavigationItem alloc] initWithTitle:NSLocalizedString(@"iControl", @"")] autorelease] animated:NO];
+    
     [navigationBar setBarStyle:UIBarStyleBlack];
+    
     [self.view addSubview:[navigationBar autorelease]];
     
-    _recordbar = [[UIImageView alloc] initWithFrame:CGRectMake(0, 43, self.view.frame.size.width, isiPad?158:124)];
-    [_recordbar setImage:[UIImage imageNamed:@"side_top"]];
-    _recordbar.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleBottomMargin;
-    [self.view addSubview:[_recordbar autorelease]];
+    bool isUseAdmob = true;
     
-    _statusLabel = [[UILabel alloc] initWithFrame:CGRectMake(85, 52, 150, 39)];
-    [_statusLabel setText:NSLocalizedString(@"Ready", @"")];
-    _statusLabel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
-    [_statusLabel setBackgroundColor:[UIColor clearColor]];
-    [_statusLabel setTextColor:[UIColor whiteColor]];
-    [_statusLabel setTextAlignment:UITextAlignmentCenter];
-    [self.view addSubview:[_statusLabel autorelease]];
+    if (isUseAdmob)
+    {
+        // Create a view of the standard size at the top of the screen.
+        // Available AdSize constants are explained in GADAdSize.h.
+        //    bannerView_ = [[GADBannerView alloc] initWithAdSize:kGADAdSizeBanner];
+        bannerView_ = [[GADBannerView alloc] initWithAdSize:kGADAdSizeMediumRectangle];
+        
+        // Specify the ad unit ID.
+        bannerView_.adUnitID = @"a152372680becc8";
+        
+        // Let the runtime know which UIViewController to restore after taking
+        // the user wherever the ad goes and add it to the view hierarchy.
+        bannerView_.rootViewController = self;
+        [self.view addSubview:bannerView_];
+        
+        GADRequest *request = [GADRequest request];
+        
+        [self LoadRequestBanner];
+        
+        self.updateTimer = [NSTimer scheduledTimerWithTimeInterval:10.0
+                                                            target:self
+                                                          selector:@selector(LoadRequestBanner)
+                                                          userInfo:nil
+                                                           repeats:YES];
+    }
     
-    UIImageView *lens = [[UIImageView alloc] initWithFrame:CGRectMake(0, _recordbar.frame.size.height + _recordbar.frame.origin.y, self.view.frame.size.width, self.view.frame.size.height - (_recordbar.frame.size.height + _recordbar.frame.origin.y))];
-    lens.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    lens.contentMode = UIViewContentModeCenter;
-    [lens setImage:[UIImage imageNamed:@"lens"]];
-    [self.view addSubview:[lens autorelease]];
+    
+    
+//    _recordbar = [[UIImageView alloc] initWithFrame:CGRectMake(0, 43, self.view.frame.size.width, isiPad?158:124)];
+//    [_recordbar setImage:[UIImage imageNamed:@"side_top"]];
+//    _recordbar.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleBottomMargin;
+//    [self.view addSubview:[_recordbar autorelease]];
+    
+//    _statusLabel = [[UILabel alloc] initWithFrame:CGRectMake(85, 52, 150, 39)];
+//    [_statusLabel setText:NSLocalizedString(@"Ready", @"")];
+//    _statusLabel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
+//    [_statusLabel setBackgroundColor:[UIColor clearColor]];
+//    [_statusLabel setTextColor:[UIColor whiteColor]];
+//    [_statusLabel setTextAlignment:UITextAlignmentCenter];
+//    [self.view addSubview:[_statusLabel autorelease]];
+    
+//    UIImageView *lens = [[UIImageView alloc] initWithFrame:CGRectMake(0, _recordbar.frame.size.height + _recordbar.frame.origin.y, self.view.frame.size.width, self.view.frame.size.height - (_recordbar.frame.size.height + _recordbar.frame.origin.y))];
+//    lens.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+//    lens.contentMode = UIViewContentModeCenter;
+//    [lens setImage:[UIImage imageNamed:@"lens"]];
+//    [self.view addSubview:[lens autorelease]];
 }
+
+- (void)LoadRequestBanner
+{
+    [bannerView_ loadRequest:[GADRequest request]];
+    NSLog(@"Request banner");
+}
+
 
 #pragma mark - UI
 - (void)viewDidLoad
 {
     [super viewDidLoad];
     
-    _record = [[[UISegmentedControl alloc] initWithItems:@[@"Start"]] autorelease];
-    _record.momentary = YES;
-    _record.segmentedControlStyle = UISegmentedControlStyleBar;
-    _record.tintColor = [UIColor greenColor];
-    [_record setAutoresizingMask:UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin];
-    [_record addTarget:self action:@selector(record:) forControlEvents:UIControlEventValueChanged];
+//    _record = [[[UISegmentedControl alloc] initWithItems:@[@"Start"]] autorelease];
+//    _record.momentary = YES;
+//    _record.segmentedControlStyle = UISegmentedControlStyleBar;
+//    _record.tintColor = [UIColor greenColor];
+//    [_record setAutoresizingMask:UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin];
+//    [_record addTarget:self action:@selector(record:) forControlEvents:UIControlEventValueChanged];
     
-    _stop = [[[UISegmentedControl alloc] initWithItems:@[@"Stop"]] autorelease];
-    _stop.momentary = YES;
-    _stop.segmentedControlStyle = UISegmentedControlStyleBar;
-    _stop.tintColor = [UIColor redColor];
-    _stop.enabled = NO;
-    [_stop setAutoresizingMask:UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin];
-    [_stop addTarget:self action:@selector(stop:) forControlEvents:UIControlEventValueChanged];
+//    _stop = [[[UISegmentedControl alloc] initWithItems:@[@"Stop"]] autorelease];
+//    _stop.momentary = YES;
+//    _stop.segmentedControlStyle = UISegmentedControlStyleBar;
+//    _stop.tintColor = [UIColor redColor];
+//    _stop.enabled = NO;
+//    [_stop setAutoresizingMask:UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin];
+//    [_stop addTarget:self action:@selector(stop:) forControlEvents:UIControlEventValueChanged];
     
-    _progressView.hidden = YES;
+//    _progressView.hidden = YES;
     
     
     // Check for iPad for layout
-    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
-        _record.frame = CGRectMake(20, 103, 135, 33);
-        _stop.frame = CGRectMake(170, 103, 135, 33);
-    } else {
-        _record.frame = CGRectMake(230, 150, 135, 33);
-        _stop.frame = CGRectMake(400, 150, 135, 33);
-    }
+//    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
+//        _record.frame = CGRectMake(20, 103, 135, 33);
+//        _stop.frame = CGRectMake(170, 103, 135, 33);
+//    } else {
+//        _record.frame = CGRectMake(230, 150, 135, 33);
+//        _stop.frame = CGRectMake(400, 150, 135, 33);
+//    }
     
     
-    [self.view addSubview:_record];
-    [self.view addSubview:_stop];
+//    [self.view addSubview:_record];
+//    [self.view addSubview:_stop];
     
     self.backgroundTask = UIBackgroundTaskInvalid;
     // Do any additional setup after loading the view from its nib.
@@ -146,20 +183,20 @@ extern CSMain* _main;
 //    {
 //        NSLog(@"Open connection");
 //    }
-//    _stop.enabled = YES;
+    _stop.enabled = YES;
 //    return;
-//    if (_main != NULL)
-//    {
-//        [_main Update];
-//    }
+    if (_main != NULL)
+    {
+        [_main Start];
+    }
 //    return;
-    self.updateTimer = [NSTimer scheduledTimerWithTimeInterval:2.0
-                                                        target:self
-                                                      selector:@selector(touchScreen)
-                                                      userInfo:nil
-                                                       repeats:YES];
-    
-    
+//    self.updateTimer = [NSTimer scheduledTimerWithTimeInterval:2.0
+//                                                        target:self
+//                                                      selector:@selector(touchScreen)
+//                                                      userInfo:nil
+//                                                       repeats:YES];
+//    
+//    
     self.backgroundTask = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{
         NSLog(@"Background handler called. Not running background tasks anymore.");
         [[UIApplication sharedApplication] endBackgroundTask:self.backgroundTask];
@@ -242,7 +279,7 @@ extern CSMain* _main;
     SBFrontmostApplicationDisplayIdentifier(port, appId);
     NSString * frontmostApp=[NSString stringWithFormat:@"%s",appId];
     
-    NSLog(@"app id %s", appId);
+    NSLog(@"front most app id %s", appId);
     
     if([frontmostApp length] == 0 || locked)
     {
@@ -254,10 +291,35 @@ extern CSMain* _main;
     }
 }
 
+- (NSString*)GetFrontMostAppName
+{
+    bool locked;
+    bool passcode;
+    mach_port_t *port;
+    void *lib = dlopen(SBSERVPATH, RTLD_LAZY);
+    int (*SBSSpringBoardServerPort)() = dlsym(lib, "SBSSpringBoardServerPort");
+    void* (*SBGetScreenLockStatus)(mach_port_t* port, bool *lockStatus, bool *passcodeEnabled) = dlsym(lib, "SBGetScreenLockStatus");
+    port = (mach_port_t *)SBSSpringBoardServerPort();
+    dlclose(lib);
+    SBGetScreenLockStatus(port, &locked, &passcode);
+    void *(*SBFrontmostApplicationDisplayIdentifier)(mach_port_t *port, char *result) = dlsym(lib, "SBFrontmostApplicationDisplayIdentifier");
+    char appId[256];
+    memset(appId, 0, sizeof(appId));
+    SBFrontmostApplicationDisplayIdentifier(port, appId);
+    NSString * frontmostApp=[NSString stringWithFormat:@"%s",appId];
+    return frontmostApp;
+}
+
 -(mach_port_t) GetHomePort
 {
     return GSCopyPurpleNamedPort("com.apple.springboard");
 }
+
+-(mach_port_t) GetApplicationPort
+{
+    return GSCopyPurpleNamedPort("org.coolstar.iControl");
+}
+
 
 static mach_port_t getFrontMostAppPort()
 {
@@ -422,9 +484,13 @@ static GSHandInfoType getHandInfoType(bool touch_down)
 
 - (void)stop:(id)sender
 {
-    OS_CloseConnection();
-    return;
-    //[_screenRecorder stopRecordingScreen];
+//    OS_CloseConnection();
+//    return;
+//    //[_screenRecorder stopRecordingScreen];
+    if (_main != NULL)
+    {
+        [_main Stop];
+    }
 }
 
 - (void)screenRecorderDidStopRecording:(CSScreenRecorder *)recorder
@@ -484,42 +550,6 @@ static GSHandInfoType getHandInfoType(bool touch_down)
 - (void) Update
 {
     NSLog(@"Update with current step =%d", _currentStep);
-    
-    switch (_currentStep)
-    {
-        case ESTABLISH_CONNECTION:
-        {
-            // Open connectiont to control server
-            if (OS_OpenConnection(IP_CONNECTION, IP_PORT) == 1)
-            {
-                NSLog(@"Update.. connect established.");
-                _currentStep++;
-            }
-        }
-            break;
-        case GET_CONSTANTS:
-        {
-            // get apps constant (position of these apps on screen: setting, uidfaker, main app, etc..)
-        }
-            break;
-        case BACK_TO_HOME_SCREEN:
-        {
-            // back to home screen
-            // only increase step if make sure current screen is home screen
-        }
-            break;
-        case KILL_ALL_BACKGROUND_APPS:
-        {
-            // click on the right side of the status bar
-            // only increase step if running list is empty
-        }
-            break;
-            
-        default:
-            break;
-    }
-//    _currentStep++;
-    
 }
 
 #pragma mark - NSFileManager Methods

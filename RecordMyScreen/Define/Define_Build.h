@@ -68,7 +68,7 @@
     #define USE_MULTIPLE_SERVERS        0
 #endif
 
-#define SERVER_ADD               "sgm.apps.zing.vn"
+#define SERVER_ADD               "192.168.2.111"
 //#define SERVER_ADD                      "49.213.72.179"
 #if(USE_LOCAL_SERVER == 1)
     #if defined(ANDROID_OS)
@@ -84,7 +84,7 @@
     #endif
 #else
     #define IP_CONNECTION               SERVER_ADD
-    #define IP_PORT                     8300
+    #define IP_PORT                     443
 #endif
 
 /** Use for fake data which contains the smaller value than real data **/

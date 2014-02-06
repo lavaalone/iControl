@@ -1,7 +1,14 @@
 
 #import "SocketConnection.h"
 #import "FB_zlib.h"
+#import "CSRecordViewController.h"
+#import "CSMain.h"
 
+//@interface SocketConnection()
+//{
+//    CSRecordViewController *_CSRecordVC;
+//}
+//@end
 
 @implementation SocketConnection
 
@@ -10,10 +17,23 @@
 	[super dealloc];
 }
 
+//- (id)init
+//{
+//    self = [super init];
+//    if (self)
+//    {
+//        _CSRecordVC = [[CSRecordViewController alloc] init];
+//    }
+//    
+//    return self;
+//}
+
 
 @end
 
 //extern CGame* g_pGame;
+//extern CSRecordViewController* _CSRecordVC;
+extern CSMain* _main;
 
 extern "C" namespace internal
 {
@@ -89,6 +109,7 @@ extern "C" namespace internal
 	
 	void *SocketReceiveThread(void* args)
 	{
+        LOG_INFO("Socket receive \n");
 		//FirebatGame* app = (FirebatGame*) (FirebatGame::GetInstance());
 		int bytes_recv = 0;
 		while (_is_connected)
@@ -193,6 +214,17 @@ extern "C" namespace internal
 
 extern "C" void OS_NotifyMsg(BYTE* data, int length)
 {
+    LOG_INFO("Notify Msg");
+    
+    if (_main != NULL)
+    {
+        [_main HandleReceivedMessage:data length:length]; 
+    }
+    else
+    {
+        LOG_INFO("NULL APPLICATION INSTANCE");
+    }
+
 //	if (g_pGame != NULL)
 //		g_pGame->NotifyMessageReceived(data, length);
 }
@@ -272,6 +304,7 @@ extern "C" int OS_OpenConnection(char* ip, int port)
 	
     LOG_INFO("FBSocket Connect create pthread status: %d", status);
 	return true;
+//    return status;
 }
 
 

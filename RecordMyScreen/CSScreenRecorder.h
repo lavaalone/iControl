@@ -29,6 +29,7 @@
 - (void)stopRecordingScreen;
 
 - (void)takeScreenshot;
+- (UIImage*)takeScreenShotAsUIImage;
 
 @end
 

@@ -7,15 +7,21 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "Define_TypeAndMacro.h"
 
-@interface CSMain : NSObject
+
+@interface CSMain : NSObject//<NSStreamDelegate>
 {
     // class variables here
-    int _currentStep;
 }
 
 // public methods here
--(void)Update;
+- (void)Start;
+- (void)Stop;
+- (void)Update;
+- (int)GetCurrentStep;
+- (void)HandleReceivedMessage:(BYTE*)data length:(int)length;
+- (void)NotifyAppExit;
 
 @end
 

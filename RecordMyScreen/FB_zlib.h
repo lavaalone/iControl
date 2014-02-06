@@ -5,7 +5,7 @@
 #import <vector.h>
 
 /* PACKAGE_CHUNK is the size of the memory chunk used by the zlib routines. */
-#define PACKAGE_CHUNK               1024
+#define PACKAGE_CHUNK               1024*2
 // src is compressed data
 // length is length of data after decompressing
 BYTE* FB_Decompress_package(BYTE *src, int srcLen, int* length)
@@ -102,6 +102,9 @@ BYTE* FB_Compress_package(BYTE *src, int srcLen, int* length)
 
 	int ret = deflateInit2(&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED, windowBits,
                         8, Z_DEFAULT_STRATEGY);
+    
+    LOG_INFO("###FB_Compress_package deflateInit2 ret: %d", ret);
+    
 	if (ret != Z_OK) {
 		LOG_INFO("FB_Compress_package deflateInit2 failed\n");
 		return NULL;
@@ -138,6 +141,10 @@ BYTE* FB_Compress_package(BYTE *src, int srcLen, int* length)
         }
     } while (ret != Z_STREAM_END && strm.avail_out == 0);
 
+//    int retry = 0;
+//    while (deflateEnd(&strm) != Z_OK) {
+//        LOG_INFO("Retry %d", retry++);
+//    }
 	if (deflateEnd(&strm) != Z_OK)
 	{
 	    if (ret != Z_BUF_ERROR)

@@ -9,6 +9,9 @@
 #import "CSAppDelegate.h"
 #import "CSRecordViewController.h"
 #import "CSCreditsViewController.h"
+#import "CSMain.h"
+
+CSMain* _main;
 
 @implementation CSAppDelegate
 
@@ -24,20 +27,22 @@
     self.window = [[[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]] autorelease];
     
     // Override point for customization after application launch.
-    UINavigationController *creditsNavVC;
+//    UINavigationController *creditsNavVC;
     UIViewController *recordVC;
-    UITableViewController *creditsVC;
+//    UITableViewController *creditsVC;
     
     recordVC = [[[CSRecordViewController alloc] init] autorelease];
     
-    creditsVC = [[[CSCreditsViewController alloc] initWithStyle:UITableViewStyleGrouped] autorelease];
-    creditsNavVC = [[[UINavigationController alloc] initWithRootViewController:creditsVC] autorelease];
-    creditsNavVC.navigationBar.barStyle = UIBarStyleBlack;
+//    creditsVC = [[[CSCreditsViewController alloc] initWithStyle:UITableViewStyleGrouped] autorelease];
+//    creditsNavVC = [[[UINavigationController alloc] initWithRootViewController:creditsVC] autorelease];
+//    creditsNavVC.navigationBar.barStyle = UIBarStyleBlack;
     
     self.tabBarController = [[[UITabBarController alloc] init] autorelease];
-    self.tabBarController.viewControllers = @[recordVC, creditsNavVC];
+    self.tabBarController.viewControllers = @[recordVC];
     self.window.rootViewController = self.tabBarController;
     [self.window makeKeyAndVisible];
+    
+    _main = [[CSMain alloc] init];
     
     return YES;
 }
@@ -67,6 +72,7 @@
 - (void)applicationWillTerminate:(UIApplication *)application
 {
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+//    [_main NotifyAppExit];
 }
 
 /*

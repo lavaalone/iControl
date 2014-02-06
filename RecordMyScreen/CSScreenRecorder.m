@@ -122,9 +122,19 @@ void CARenderServerRenderDisplay(kern_return_t a, CFStringRef b, IOSurfaceRef su
     [self screenShot];
 }
 
+- (UIImage*)takeScreenShotAsUIImage
+{
+    if (_width == 0 && _height == 0)
+    {
+        [self setupImageContext];
+    }
+    
+    return [self screenShot];
+}
+
 - (void)setupImageContext
 {
-    NSLog(@"Setup image context");
+    NSLog(@"Start setup image context");
     // Get the screen rect and scale
     CGRect screenRect = [UIScreen mainScreen].bounds;
     float scale = [UIScreen mainScreen].scale;
@@ -142,8 +152,7 @@ void CARenderServerRenderDisplay(kern_return_t a, CFStringRef b, IOSurfaceRef su
         _width = screenRect.size.height * scale;
         _height = screenRect.size.width * scale;
     }
-    
-
+    NSLog(@"Finish setup image context");
 }
 
 - (void)startRecordingScreen
@@ -280,7 +289,7 @@ void CARenderServerRenderDisplay(kern_return_t a, CFStringRef b, IOSurfaceRef su
     });
 }
 
-- (void)screenShot
+- (UIImage*)screenShot
 {
     // Create an IOSurfaceRef if one does not exist
     if(!_surface) {
@@ -312,12 +321,18 @@ void CARenderServerRenderDisplay(kern_return_t a, CFStringRef b, IOSurfaceRef su
                                      provider, NULL,
                                      YES, kCGRenderingIntentDefault);
     UIImage *img = [UIImage imageWithCGImage:cgImage];
+    
+    return img;
+//    NSData *data = UIImagePNGRepresentation(img);
+//    NSUInteger len = [data length];
+//    Byte *byteData = (Byte*)malloc(len);
+//    [data getBytes:&byteData length:len];
     //UIImageWriteToSavedPhotosAlbum(img, self, nil, nil);
     //NSLog(@"### Height = %f", surfaceImage.size.height);
     
 //    UIImageWriteToSavedPhotosAlbum(img, self, @selector(image:didFinishSavingWithError:contextInfo:), nil);
-    UIImageWriteToSavedPhotosAlbum(img, self, nil, nil);
-    return;
+//    UIImageWriteToSavedPhotosAlbum(img, self, nil, nil);
+//    return;
     
     /*
     CFMutableDictionaryRef dict;
